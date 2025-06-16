@@ -1,22 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Slider from 'react-slick';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
+import { useEffect, useState, useRef } from 'react';
+import TestimonialCard from './TestimonialCard';
 
 type Testimonial = {
   id: number;
   company: string;
-  logo: string;
   text: string;
   author: string;
   role: string;
+  logo: string;
   avatar: string;
 };
 
 export default function TestimonialSlider() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [startIndex, setStartIndex] = useState(0);
+  const [visibleSlides, setVisibleSlides] = useState(3);
+  const [showArrows, setShowArrows] = useState(true);
+
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   useEffect(() => {
     fetch('/api/testimonials')
@@ -24,49 +28,149 @@ export default function TestimonialSlider() {
       .then(data => setTestimonials(data));
   }, []);
 
-  const settings = {
-    dots: false,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    arrows: true,
-    responsive: [
-      {
-        breakpoint: 1024,
-        settings: { slidesToShow: 2 }
-      },
-      {
-        breakpoint: 640,
-        settings: { slidesToShow: 1 }
+  useEffect(() => {
+    const updateSlides = () => {
+      if (window.innerWidth < 768) {
+        setVisibleSlides(1);
+        setShowArrows(false);
+      } else if (window.innerWidth < 1313) {
+        setVisibleSlides(2);
+        setShowArrows(false);
+      } else if (window.innerWidth < 1378) {
+        setVisibleSlides(3);
+        setShowArrows(false);
+      } else {
+        setVisibleSlides(3);
+        setShowArrows(true);
       }
-    ]
+    };
+    updateSlides();
+    window.addEventListener('resize', updateSlides);
+    return () => window.removeEventListener('resize', updateSlides);
+  }, []);
+
+  const slideWidth = 380 + 20; // card width + gap
+
+  const next = () => {
+    if (testimonials.length === 0) return;
+    const maxIndex = testimonials.length - visibleSlides;
+    setStartIndex((prev) =>
+      prev >= maxIndex ? 0 : prev + 1
+    );
   };
 
-  if (testimonials.length === 0) {
-    return <p className="text-center text-gray-500">Loading...</p>;
-  }
+  const prev = () => {
+    if (testimonials.length === 0) return;
+    const maxIndex = testimonials.length - visibleSlides;
+    setStartIndex((prev) =>
+      prev <= 0 ? maxIndex : prev - 1
+    );
+  };
+
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (
+      touchStartX.current !== null &&
+      touchEndX.current !== null &&
+      Math.abs(touchStartX.current - touchEndX.current) > 50
+    ) {
+      if (touchStartX.current > touchEndX.current) {
+        next();
+      } else {
+        prev();
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  const totalDots = Math.ceil((testimonials.length - visibleSlides + 1));
+  const currentDot = startIndex;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <h2 className="text-3xl font-bold text-center mb-10">Voices of Success with Sales Fortuna</h2>
-      <Slider {...settings}>
-        {testimonials.map(t => (
-          <div key={t.id} className="px-3">
-            <div className="bg-white shadow-md rounded-xl p-6 h-full text-center">
-              <img src={t.logo} alt={t.company} className="h-6 mx-auto mb-4" />
-              <p className="text-gray-600 italic mb-6">“{t.text}”</p>
-              <div className="flex items-center justify-center gap-4">
-                <img src={t.avatar} alt={t.author} className="h-12 w-12 rounded-full object-cover" />
-                <div>
-                  <p className="font-bold">{t.author}</p>
-                  <p className="text-sm text-gray-500">{t.role}, {t.company}</p>
-                </div>
+    <section
+      className="bg-[url('/images/bg.png')] w-full min-h-[755px] bg-no-repeat bg-center bg-[length:1920px_755px] px-4 sm:px-6 lg:px-[50px] py-12 overflow-hidden"
+      onTouchStart={!showArrows ? handleTouchStart : undefined}
+      onTouchMove={!showArrows ? handleTouchMove : undefined}
+      onTouchEnd={!showArrows ? handleTouchEnd : undefined}
+    >
+      <h1 className="font-bold text-3xl sm:text-4xl lg:text-[48px] text-center mb-12 text-black">
+        Voices of Success with Sales Fortuna
+      </h1>
+
+      <div className="relative max-w-[1220px] mx-auto flex items-center">
+        {showArrows && (
+          <button
+            onClick={prev}
+            className="w-[68px] h-[68px] hidden lg:flex items-center justify-center absolute left-[-78px] top-1/2 -translate-y-1/2 hover:scale-110 transition cursor-pointer"
+          >
+            <img src="/images/logo/arrow-left.svg" alt="prev" />
+          </button>
+        )}
+
+        <div className="overflow-hidden w-full">
+          <div
+            className="flex gap-5 justify-center items-stretch"
+            style={{
+              minHeight: 0,
+              minWidth: 0,
+              width: '100%',
+            }}
+          >
+            {testimonials.slice(startIndex, startIndex + visibleSlides).map((t) => (
+              <div
+                key={t.id}
+                style={{
+                  width: 380,
+                  minHeight: 0,
+                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'stretch',
+                }}
+                className="flex-shrink-0 flex"
+              >
+                <TestimonialCard
+                  id={t.id}
+                  company={t.company}
+                  text={t.text}
+                  author={t.author}
+                  role={t.role}
+                  logo={t.logo}
+                  avatar={t.avatar}
+                />
               </div>
-            </div>
+            ))}
           </div>
+        </div>
+
+        {showArrows && (
+          <button
+            onClick={next}
+            className="w-[68px] h-[68px] hidden lg:flex items-center justify-center absolute right-[-78px] top-1/2 -translate-y-1/2 hover:scale-110 transition cursor-pointer"
+          >
+            <img src="/images/logo/arrow-right.svg" alt="next" />
+          </button>
+        )}
+      </div>
+
+      <div className="flex justify-center mt-6">
+        {Array.from({ length: totalDots }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setStartIndex(i)}
+            className={`w-3 h-3 mx-1 rounded-full transition-colors ${i === currentDot ? 'bg-gray-800' : 'bg-gray-400'
+              }`}
+          />
         ))}
-      </Slider>
-    </div>
+      </div>
+    </section>
   );
 }
