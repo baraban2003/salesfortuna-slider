@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import TestimonialCard from './TestimonialCard';
 
 type Testimonial = {
@@ -48,8 +49,6 @@ export default function TestimonialSlider() {
     window.addEventListener('resize', updateSlides);
     return () => window.removeEventListener('resize', updateSlides);
   }, []);
-
-  const slideWidth = 380 + 20; // card width + gap
 
   const next = () => {
     if (testimonials.length === 0) return;
@@ -112,7 +111,7 @@ export default function TestimonialSlider() {
             onClick={prev}
             className="w-[68px] h-[68px] hidden lg:flex items-center justify-center absolute left-[-78px] top-1/2 -translate-y-1/2 hover:scale-110 transition cursor-pointer"
           >
-            <img src="/images/logo/arrow-left.svg" alt="prev" />
+            <Image src="/images/logo/arrow-left.svg" alt="prev" width={68} height={68} />
           </button>
         )}
 
@@ -156,7 +155,7 @@ export default function TestimonialSlider() {
             onClick={next}
             className="w-[68px] h-[68px] hidden lg:flex items-center justify-center absolute right-[-78px] top-1/2 -translate-y-1/2 hover:scale-110 transition cursor-pointer"
           >
-            <img src="/images/logo/arrow-right.svg" alt="next" />
+            <Image src="/images/logo/arrow-right.svg" alt="next" width={68} height={68} />
           </button>
         )}
       </div>
